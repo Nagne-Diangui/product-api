@@ -5,6 +5,7 @@ stages:
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
 
 # JOB 1 : Lancer les tests unitaires
 test:
