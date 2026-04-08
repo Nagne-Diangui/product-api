@@ -12,6 +12,7 @@ test:
   stage: test
   image: maven:3.9-eclipse-temurin-17
   script:
+    - echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
     - mvn test
   cache:
     paths:
@@ -22,6 +23,7 @@ build:
   stage: build
   image: maven:3.9-eclipse-temurin-17
   script:
+    - echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
     - mvn clean package -DskipTests
   artifacts:
     paths:
