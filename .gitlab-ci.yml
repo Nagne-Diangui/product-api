@@ -1,0 +1,50 @@
+stages:
+  - test
+  - build
+  - docker
+
+variables:
+  # Cache Maven pour éviter de re-télécharger les dépendances à chaque pipeline
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+# JOB 1 : Lancer les tests unitaires
+test:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn test
+  cache:
+    paths:
+      - .m2/repository
+
+# JOB 2 : Compiler le projet et générer le JAR
+build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn clean package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar   # Le JAR généré est transmis au job suivant
+    expire_in: 1 hour
+  cache:
+    paths:
+      - .m2/repository
+
+# JOB 3 : Construire l'image Docker et la pousser sur Docker Hub
+docker:
+  stage: docker
+  image: docker:latest
+  services:
+    - docker:dind   # Docker-in-Docker : permet d'utiliser Docker dans le pipeline
+  script:
+    - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+    - docker build -t $DOCKER_IMAGE:latest .
+    - docker push $DOCKER_IMAGE:latest
+  dependencies:
+    - build   # Récupère le JAR produit par le job build
+
+# Ce pipeline se déclenche uniquement sur la branche develop
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"

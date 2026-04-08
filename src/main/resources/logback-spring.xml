@@ -1,0 +1,32 @@
+<configuration>
+
+    <!-- Appender console : affiche les logs dans le terminal comme d'habitude -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender Loki : envoie les logs vers Loki sur la VM2 -->
+    <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+        <http>
+            <url>http://192.168.1.244:3100/loki/api/v1/push</url>
+        </http>
+        <format>
+            <label>
+                <!-- Label pour identifier l'app dans Grafana -->
+                <pattern>app=${spring.application.name}</pattern>
+            </label>
+            <message>
+                <pattern>%-5level [%thread] %logger{36} - %msg%n</pattern>
+            </message>
+        </format>
+    </appender>
+
+    <!-- Configuration globale : utilise les deux appenders -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="LOKI"/>
+    </root>
+
+</configuration>
