@@ -1,5 +1,8 @@
 <configuration>
 
+    <!-- Importe spring.application.name comme propriété logback -->
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="product-api"/>
+
     <!-- Appender console : affiche les logs dans le terminal comme d'habitude -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -15,7 +18,7 @@
         <format>
             <label>
                 <!-- Label pour identifier l'app dans Grafana -->
-                <pattern>app=${spring.application.name}</pattern>
+                <pattern>app=${appName}</pattern>
             </label>
             <message>
                 <pattern>%-5level [%thread] %logger{36} - %msg%n</pattern>
