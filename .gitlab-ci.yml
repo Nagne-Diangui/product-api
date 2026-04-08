@@ -4,7 +4,6 @@ stages:
   - docker
 
 variables:
-  # Cache Maven pour éviter de re-télécharger les dépendances à chaque pipeline
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 # JOB 1 : Lancer les tests unitaires
@@ -12,7 +11,33 @@ test:
   stage: test
   image: maven:3.9-eclipse-temurin-17
   script:
-    - mvn test -s "$MAVEN_SETTINGS"
+    - mkdir -p /root/.m2
+    - |
+      cat > /root/.m2/settings.xml << EOF
+      <settings>
+        <mirrors>
+          <mirror>
+            <id>maven-default-http-blocker</id>
+            <mirrorOf>dummy</mirrorOf>
+            <url>http://0.0.0.0/</url>
+            <blocked>false</blocked>
+          </mirror>
+        </mirrors>
+        <servers>
+          <server>
+            <id>nexus-releases</id>
+            <username>admin</username>
+            <password>${NEXUS_PASSWORD}</password>
+          </server>
+          <server>
+            <id>nexus-snapshots</id>
+            <username>admin</username>
+            <password>${NEXUS_PASSWORD}</password>
+          </server>
+        </servers>
+      </settings>
+      EOF
+    - mvn test
   cache:
     paths:
       - .m2/repository
@@ -22,10 +47,36 @@ build:
   stage: build
   image: maven:3.9-eclipse-temurin-17
   script:
-    - mvn clean package -DskipTests -s "$MAVEN_SETTINGS"
+    - mkdir -p /root/.m2
+    - |
+      cat > /root/.m2/settings.xml << EOF
+      <settings>
+        <mirrors>
+          <mirror>
+            <id>maven-default-http-blocker</id>
+            <mirrorOf>dummy</mirrorOf>
+            <url>http://0.0.0.0/</url>
+            <blocked>false</blocked>
+          </mirror>
+        </mirrors>
+        <servers>
+          <server>
+            <id>nexus-releases</id>
+            <username>admin</username>
+            <password>${NEXUS_PASSWORD}</password>
+          </server>
+          <server>
+            <id>nexus-snapshots</id>
+            <username>admin</username>
+            <password>${NEXUS_PASSWORD}</password>
+          </server>
+        </servers>
+      </settings>
+      EOF
+    - mvn clean package -DskipTests
   artifacts:
     paths:
-      - target/*.jar   # Le JAR généré est transmis au job suivant
+      - target/*.jar
     expire_in: 1 hour
   cache:
     paths:
@@ -36,13 +87,13 @@ docker:
   stage: docker
   image: docker:latest
   services:
-    - docker:dind   # Docker-in-Docker : permet d'utiliser Docker dans le pipeline
+    - docker:dind
   script:
     - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
     - docker build -t $DOCKER_IMAGE:latest .
     - docker push $DOCKER_IMAGE:latest
   dependencies:
-    - build   # Récupère le JAR produit par le job build
+    - build
 
 # Ce pipeline se déclenche uniquement sur la branche develop
 workflow:
