@@ -1,0 +1,43 @@
+services:
+
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"   # Spring Boot envoie ses logs ici
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"   # Interface web Prometheus accessible sur http://VM2:9090
+    volumes:
+      # On monte notre fichier prometheus.yml dans le conteneur
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"   # Interface web Grafana accessible sur http://VM2:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin   # Mot de passe par défaut : admin
+    volumes:
+      - grafana-data:/var/lib/grafana       # Sauvegarde les dashboards entre redémarrages
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  grafana-data:
