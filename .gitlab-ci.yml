@@ -12,8 +12,7 @@ test:
   stage: test
   image: maven:3.9-eclipse-temurin-17
   script:
-    - echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
-    - mvn test
+    - mvn test -s $MAVEN_SETTINGS
   cache:
     paths:
       - .m2/repository
@@ -23,8 +22,7 @@ build:
   stage: build
   image: maven:3.9-eclipse-temurin-17
   script:
-    - echo "$MAVEN_SETTINGS" > /root/.m2/settings.xml
-    - mvn clean package -DskipTests
+    - mvn clean package -DskipTests -s $MAVEN_SETTINGS
   artifacts:
     paths:
       - target/*.jar   # Le JAR généré est transmis au job suivant
