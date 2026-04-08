@@ -4,7 +4,8 @@ stages:
   - docker
 
 variables:
-  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  # Cache Maven dans le home de gitlab-runner — persiste entre les builds
+  MAVEN_OPTS: "-Dmaven.repo.local=/home/gitlab-runner/.m2/repository"
   JAVA_HOME: "/usr/lib/jvm/java-21-openjdk-amd64"
 
 # JOB 1 : Lancer les tests unitaires
@@ -12,7 +13,6 @@ test:
   stage: test
   tags:
     - vm1
-  image: maven:3.9-eclipse-temurin-17
   script:
     - mkdir -p ~/.m2
     - |
@@ -41,16 +41,12 @@ test:
       </settings>
       EOF
     - mvn test
-  cache:
-    paths:
-      - .m2/repository
 
 # JOB 2 : Compiler le projet et générer le JAR
 build:
   stage: build
   tags:
     - vm1
-  image: maven:3.9-eclipse-temurin-17
   script:
     - mkdir -p ~/.m2
     - |
@@ -79,28 +75,16 @@ build:
       </settings>
       EOF
     - mvn clean package -DskipTests
-  artifacts:
-    paths:
-      - target/*.jar
-    expire_in: 1 hour
-  cache:
-    paths:
-      - .m2/repository
 
 # JOB 3 : Construire l'image Docker et la pousser sur Docker Hub
 docker:
   stage: docker
   tags:
     - vm1
-  image: docker:latest
-  services:
-    - docker:dind
   script:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
     - docker build -t $DOCKER_IMAGE:latest .
     - docker push $DOCKER_IMAGE:latest
-  dependencies:
-    - build
 
 # Ce pipeline se déclenche uniquement sur la branche develop
 workflow:
